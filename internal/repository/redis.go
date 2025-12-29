@@ -10,7 +10,7 @@ import (
 
 var Ctx = context.Background()
 
-func NewRediusClient(addr string) (*redis.Client, error) {
+func NewRedisClient(addr string) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})

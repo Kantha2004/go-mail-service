@@ -4,4 +4,3 @@ vendor
 logs
 **.log
 email_service
-api

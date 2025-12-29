@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -18,6 +20,7 @@ const (
 type EmailWorker struct {
 	redisClient *redis.Client
 	Handler     func(context.Context, redis.XMessage) error
+	wg          sync.WaitGroup
 }
 
 func NewEmailWorker(client *redis.Client) *EmailWorker {
@@ -31,6 +34,9 @@ func NewEmailWorker(client *redis.Client) *EmailWorker {
 }
 
 func (w *EmailWorker) Start(ctx context.Context) {
+	w.wg.Add(1)
+	defer w.wg.Done()
+
 	slog.Info("EmailWorker starting...")
 
 	w.ensureGroupExists(ctx)
@@ -60,7 +66,7 @@ func (w *EmailWorker) processNextBatch(ctx context.Context) {
 		Consumer: EMAIL_CONSUMER,
 		Streams:  []string{EMAIL_STREAM, ">"},
 		Count:    1,
-		Block:    0,
+		Block:    2 * time.Second,
 	}).Result()
 
 	if err != nil {
@@ -87,4 +93,16 @@ func (w *EmailWorker) processStream(ctx context.Context, stream redis.XStream) {
 			slog.Error("Failed to ACK message", "message_id", msg.ID, "error", err)
 		}
 	}
+}
+
+func (w *EmailWorker) Stop() {
+	slog.Info("Waiting for worker validation to finish...")
+	w.wg.Wait()
+	slog.Info("Worker stopped, closing Redis connection")
+
+	if err := w.redisClient.Close(); err != nil {
+		slog.Error("Failed to close Redis client", "error", err)
+	}
+
+	slog.Info("Redis connection closed")
 }
