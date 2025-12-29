@@ -1,0 +1,7 @@
+bin
+vendor
+.env
+logs
+**.log
+email_service
+api
