@@ -11,6 +11,7 @@ A Go microservice for handling email operations.
   - `models`: Domain models.
   - `repository`: Data access layer.
   - `service`: Business logic.
+  - `worker`: Worker logic.
 - `pkg/`: Public library code.
 
 ## Running the application
