@@ -35,7 +35,7 @@ The application is configured via environment variables. You can set these in a 
 
 ## Prerequisites
 
-- **Go**: 1.22+
+- **Go**: 1.25+
 - **Redis**: Running instance on `localhost:6379` (or configure via `REDIS_ADDR`).
 
 ## Running the application

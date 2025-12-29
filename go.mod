@@ -1,6 +1,6 @@
 module go_email_service
 
-go 1.22.2
+go 1.25
 
 require (
 	github.com/alicebob/miniredis/v2 v2.35.0 // indirect
