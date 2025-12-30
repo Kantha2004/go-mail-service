@@ -91,6 +91,7 @@ func (s *MailTrapService) SendEmail(to string, subject string, body string, mess
 		)
 		return err
 	}
+	defer res.Body.Close()
 
 	resbody, err := io.ReadAll(res.Body)
 
