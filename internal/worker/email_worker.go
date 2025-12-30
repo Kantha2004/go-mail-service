@@ -2,12 +2,14 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Kantha2004/go-mail-service/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -17,19 +19,48 @@ const (
 	EMAIL_CONSUMER = "go-email:consumer"
 )
 
+type RedisMailPayload struct {
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
+}
+
 type EmailWorker struct {
 	redisClient *redis.Client
 	Handler     func(context.Context, redis.XMessage) error
 	wg          sync.WaitGroup
+	mailService service.MailService
+	Stream      string
+	Group       string
+	Consumer    string
 }
 
-func NewEmailWorker(client *redis.Client) *EmailWorker {
+func NewEmailWorker(client *redis.Client, mailService service.MailService) *EmailWorker {
 	return &EmailWorker{
 		redisClient: client,
 		Handler: func(ctx context.Context, msg redis.XMessage) error {
 			slog.Info("Processing email message", "message_id", msg.ID, "values", msg.Values)
+
+			data, err := json.Marshal(msg.Values)
+			if err != nil {
+				return err
+			}
+
+			var payload RedisMailPayload
+			if err := json.Unmarshal(data, &payload); err != nil {
+				return err
+			}
+
+			if err := mailService.SendEmail(payload.To, payload.Subject, payload.Body, msg.ID); err != nil {
+				return err
+			}
+
 			return nil
 		},
+		mailService: mailService,
+		Stream:      EMAIL_STREAM,
+		Group:       EMAIL_GROUP,
+		Consumer:    EMAIL_CONSUMER,
 	}
 }
 
@@ -53,7 +84,7 @@ func (w *EmailWorker) Start(ctx context.Context) {
 }
 
 func (w *EmailWorker) ensureGroupExists(ctx context.Context) {
-	err := w.redisClient.XGroupCreateMkStream(ctx, EMAIL_STREAM, EMAIL_GROUP, "$").Err()
+	err := w.redisClient.XGroupCreateMkStream(ctx, w.Stream, w.Group, "$").Err()
 	if err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
 		slog.Error("Failed to create consumer group", "error", err)
 		os.Exit(1) // Fatal equivalent
@@ -62,9 +93,9 @@ func (w *EmailWorker) ensureGroupExists(ctx context.Context) {
 
 func (w *EmailWorker) processNextBatch(ctx context.Context) {
 	streams, err := w.redisClient.XReadGroup(ctx, &redis.XReadGroupArgs{
-		Group:    EMAIL_GROUP,
-		Consumer: EMAIL_CONSUMER,
-		Streams:  []string{EMAIL_STREAM, ">"},
+		Group:    w.Group,
+		Consumer: w.Consumer,
+		Streams:  []string{w.Stream, ">"},
 		Count:    1,
 		Block:    2 * time.Second,
 	}).Result()
@@ -89,7 +120,7 @@ func (w *EmailWorker) processStream(ctx context.Context, stream redis.XStream) {
 			continue
 		}
 
-		if err := w.redisClient.XAck(ctx, EMAIL_STREAM, EMAIL_GROUP, msg.ID).Err(); err != nil {
+		if err := w.redisClient.XAck(ctx, w.Stream, w.Group, msg.ID).Err(); err != nil {
 			slog.Error("Failed to ACK message", "message_id", msg.ID, "error", err)
 		}
 	}

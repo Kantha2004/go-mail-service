@@ -12,6 +12,7 @@ import (
 	"github.com/Kantha2004/go-mail-service/internal/config"
 	"github.com/Kantha2004/go-mail-service/internal/logger"
 	"github.com/Kantha2004/go-mail-service/internal/repository"
+	"github.com/Kantha2004/go-mail-service/internal/service"
 	"github.com/Kantha2004/go-mail-service/internal/worker"
 
 	"github.com/lmittmann/tint"
@@ -50,7 +51,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	emailWorker := worker.NewEmailWorker(redisClient)
+	mailService := service.NewMailTrapService(config.MailtrapAPIKey, config.MailtrapURL)
+	emailWorker := worker.NewEmailWorker(redisClient, mailService)
 	go emailWorker.Start(ctx)
 
 	slog.Info("Starting Email Service", "port", config.ServerPort)

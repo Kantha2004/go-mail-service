@@ -8,8 +8,10 @@ import (
 )
 
 type Config struct {
-	RedisAddr  string
-	ServerPort string
+	RedisAddr      string
+	ServerPort     string
+	MailtrapAPIKey string
+	MailtrapURL    string
 }
 
 func LoadConfig() *Config {
@@ -18,8 +20,10 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		RedisAddr:  getEnv("REDIS_ADDR", "localhost:6379"),
-		ServerPort: getEnv("SERVER_PORT", ":8081"),
+		RedisAddr:      getEnv("REDIS_ADDR", "localhost:6379"),
+		ServerPort:     getEnv("SERVER_PORT", ":8081"),
+		MailtrapAPIKey: getEnv("MAILTRAP_API_KEY", ""),
+		MailtrapURL:    getEnv("MAILTRAP_URL", ""),
 	}
 }
 
