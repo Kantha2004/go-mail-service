@@ -41,15 +41,15 @@ func main() {
 
 	config := config.LoadConfig()
 
-	redisClient, err := repository.NewRedisClient(config.RedisAddr)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	redisClient, err := repository.NewRedisClient(ctx, config.RedisAddr)
 
 	if err != nil {
 		slog.Error("Failed to connect to Redis", "error", err)
 		os.Exit(1)
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	mailService := service.NewMailTrapService(config.MailtrapAPIKey, config.MailtrapURL)
 	emailWorker := worker.NewEmailWorker(redisClient, mailService)
