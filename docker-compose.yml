@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    environment:
+      - SERVER_PORT=:8081
+      - REDIS_ADDR=redis:6379
+      # Pass Mailtrap credentials from host environment
+      - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
+      - MAILTRAP_URL=${MAILTRAP_URL}
+    restart: on-failure
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
