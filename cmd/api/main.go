@@ -82,11 +82,12 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	slog.Info("Shutting down server...")
+	slog.Warn("Press Ctrl+C again to force quit")
 
 	// Force shutdown on second signal
 	go func() {
 		<-quit
-		slog.Info("Force quitting...")
+		slog.Info("Force quitting received...")
 		os.Exit(1)
 	}()
 
