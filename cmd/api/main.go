@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
-	"go_email_service/internal/config"
-	"go_email_service/internal/logger"
-	"go_email_service/internal/repository"
-	"go_email_service/internal/worker"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/Kantha2004/go-mail-service/internal/config"
+	"github.com/Kantha2004/go-mail-service/internal/logger"
+	"github.com/Kantha2004/go-mail-service/internal/repository"
+	"github.com/Kantha2004/go-mail-service/internal/worker"
 
 	"github.com/lmittmann/tint"
 )
